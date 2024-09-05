@@ -1,12 +1,15 @@
 PRECIO_BASE = 50000
 
 def es_bisiesto(anio):
+    """Determina si un año es bisiesto"""
     return (anio % 4 == 0 and anio % 100 != 0) or (anio % 400 == 0)
 
 def es_numero_valido(cadena):
+    """Usa el método isdigit() para comprobar si la cadena es numérica."""
     return cadena.isdigit()
 
 def es_fecha_valida(fecha_str):
+    """Verifica si una fecha en formato "DD/MM/AAAA" es válida."""
     partes = fecha_str.split("/")
     if len(partes) != 3:
         return False
@@ -28,6 +31,7 @@ def es_fecha_valida(fecha_str):
     return True
 
 def solicitar_fecha_valida():
+    """Solicita al usuario una fecha válida."""
     fecha = input("Introduce la fecha del espectáculo (DD/MM/AAAA): ")
     while not es_fecha_valida(fecha):
         print("Fecha no válida. Por favor, ingrese una fecha válida.")
@@ -35,6 +39,7 @@ def solicitar_fecha_valida():
     return fecha
 
 def cargar_espectaculos():
+    """Carga la información de los espectáculos."""
     nombres = []
     fechas = []
     asientos_list = []
@@ -54,6 +59,7 @@ def cargar_espectaculos():
     return nombres, fechas, asientos_list
 
 def mostrar_asientos(asientos, nombre, fecha):
+    """Muestra el estado de los asientos para un espectáculo."""
     print(f"Asientos para el espectáculo '{nombre}' en la fecha {fecha}:")
     for fila in asientos:
         linea = ""
@@ -62,12 +68,14 @@ def mostrar_asientos(asientos, nombre, fecha):
         print(linea.strip())
 
 def calcular_precio(fila):
+    """Calcula el precio de un asiento basado en su fila."""
     if fila < 3:  # Si la fila está entre las primeras 3
         return PRECIO_BASE * 1.4  # 40% más caro
     else:
         return PRECIO_BASE
 
 def reservar_entrada(asientos, nombre, fecha):
+    """Permite al usuario reservar un asiento."""
     while True:
         mostrar_asientos(asientos, nombre, fecha)  # Mostrar la sala antes de la reserva con nombre y fecha
         fila = int(input("Introduce el número de fila: "))
@@ -90,11 +98,13 @@ def reservar_entrada(asientos, nombre, fecha):
             print("Número de fila o columna inválido. Inténtalo de nuevo.")
 
 def consultar_disponibilidad(asientos):
+    """Consulta la disponibilidad de asientos."""
     libres = sum(fila.count(0) for fila in asientos)
     ocupados = sum(fila.count(1) for fila in asientos)
     print(f"Asientos libres: {libres}, Asientos ocupados: {ocupados}")
 
 def cancelar_reserva(asientos, fila, columna):
+    """Cancela la reserva de un asiento"""
     if asientos[fila][columna] == 1:  # Si el asiento está ocupado
         asientos[fila][columna] = 0  # Liberar el asiento
         print("Reserva cancelada.")
@@ -102,6 +112,7 @@ def cancelar_reserva(asientos, fila, columna):
         print("El asiento ya estaba libre.")
 
 def main():
+    """Programa Principal"""
     nombres, fechas, asientos_list = cargar_espectaculos()
     
     while True:
