@@ -6,6 +6,18 @@ def es_bisiesto(anio):
 def es_numero_valido(cadena):
     return cadena.isdigit()
 
+def solicitar_numero_entero(mensaje, maximo=None):
+    while True:
+        valor = input(mensaje)
+        if es_numero_valido(valor):
+            numero = int(valor)
+            if maximo is None or numero <= maximo:
+                return numero
+            else:
+                print(f"Error: Debe ingresar un número menor o igual a {maximo}.")
+        else:
+            print("Error: Debe ingresar un número entero válido.")
+
 def es_fecha_valida(fecha_str):
     partes = fecha_str.split("/")
     if len(partes) != 3:
@@ -13,6 +25,9 @@ def es_fecha_valida(fecha_str):
     
     dia_str, mes_str, anio_str = partes
     if not (es_numero_valido(dia_str) and es_numero_valido(mes_str) and es_numero_valido(anio_str)):
+        return False
+    
+    if len(dia_str) != 2 or len(mes_str) != 2 or len(anio_str) != 4:
         return False
     
     dia, mes, anio = int(dia_str), int(mes_str), int(anio_str)
@@ -30,36 +45,40 @@ def es_fecha_valida(fecha_str):
 def solicitar_fecha_valida():
     fecha = input("Introduce la fecha del espectáculo (DD/MM/AAAA): ")
     while not es_fecha_valida(fecha):
-        print("Fecha no válida. Por favor, ingrese una fecha válida.")
+        print("Fecha no válida. Debe estar en formato DD/MM/AAAA.")
         fecha = input("Introduce la fecha del espectáculo (DD/MM/AAAA): ")
     return fecha
 
 def cargar_espectaculos():
-    nombres = []
-    fechas = []
-    asientos_list = []
+    espectaculos = {}
     
-    n = int(input("Introduce la cantidad de espectáculos: "))
+    n = solicitar_numero_entero("Introduce la cantidad de espectáculos: ")
+    
     for i in range(n):
         nombre = input(f"Introduce el nombre del espectáculo {i + 1}: ")
         fecha = solicitar_fecha_valida()
-        filas = int(input("Introduce el número de filas de asientos: "))
-        columnas = int(input("Introduce el número de asientos por fila: "))
+        filas = solicitar_numero_entero("Introduce el número de filas de asientos (máx 50): ", maximo=50)
+        columnas = solicitar_numero_entero("Introduce el número de asientos por fila (máx 50): ", maximo=50)
         asientos = [[0] * columnas for _ in range(filas)]  # 0 = libre, 1 = ocupado
         
-        nombres.append(nombre)
-        fechas.append(fecha)
-        asientos_list.append(asientos)
+        espectaculos[nombre] = {
+            "fecha": fecha,
+            "asientos": asientos
+        }
     
-    return nombres, fechas, asientos_list
+    return espectaculos
 
 def mostrar_asientos(asientos, nombre, fecha):
     print(f"Asientos para el espectáculo '{nombre}' en la fecha {fecha}:")
     for fila in asientos:
-        linea = ""
-        for asiento in fila:
-            linea += str(asiento) + " "
+        linea = " ".join(str(asiento) for asiento in fila)
         print(linea.strip())
+
+def mostrar_asientos_disponibles(asientos):
+    print("Asientos disponibles (0 = libre, 1 = ocupado):")
+    for i, fila in enumerate(asientos):
+        linea = " ".join(str(asiento) for asiento in fila)
+        print(f"Fila {i}: {linea.strip()}")
 
 def calcular_precio(fila):
     if fila < 3:  # Si la fila está entre las primeras 3
@@ -67,16 +86,16 @@ def calcular_precio(fila):
     else:
         return PRECIO_BASE
 
-def reservar_entrada(asientos, nombre, fecha):
+def reservar_entrada(asientos):
+    mostrar_asientos_disponibles(asientos)  # Mostrar la matriz de asientos disponibles
     while True:
-        mostrar_asientos(asientos, nombre, fecha)  # Mostrar la sala antes de la reserva con nombre y fecha
-        fila = int(input("Introduce el número de fila: "))
-        columna = int(input("Introduce el número de asiento: "))
+        fila = solicitar_numero_entero("Introduce el número de fila: ")
+        columna = solicitar_numero_entero("Introduce el número de asiento: ")
         
         if fila >= 0 and fila < len(asientos) and columna >= 0 and columna < len(asientos[0]):
             if asientos[fila][columna] == 0:  # Si el asiento está libre
                 precio = calcular_precio(fila)
-                print(f"El precio de la butaca es de: {precio} pesos.")
+                print(f"El precio de la butaca es: {precio} unidades monetarias.")
                 confirmar = input("¿Desea confirmar la reserva? (si/no): ")
                 if confirmar.lower() == 'si':
                     asientos[fila][columna] = 1  # Reservar el asiento
@@ -94,7 +113,11 @@ def consultar_disponibilidad(asientos):
     ocupados = sum(fila.count(1) for fila in asientos)
     print(f"Asientos libres: {libres}, Asientos ocupados: {ocupados}")
 
-def cancelar_reserva(asientos, fila, columna):
+def cancelar_reserva(asientos):
+    mostrar_asientos_disponibles(asientos)  # Mostrar la matriz de asientos para cancelar
+    fila = solicitar_numero_entero("Introduce el número de fila: ")
+    columna = solicitar_numero_entero("Introduce el número de asiento: ")
+    
     if asientos[fila][columna] == 1:  # Si el asiento está ocupado
         asientos[fila][columna] = 0  # Liberar el asiento
         print("Reserva cancelada.")
@@ -102,7 +125,7 @@ def cancelar_reserva(asientos, fila, columna):
         print("El asiento ya estaba libre.")
 
 def main():
-    nombres, fechas, asientos_list = cargar_espectaculos()
+    espectaculos = cargar_espectaculos()
     
     while True:
         print("\n--- Gestión de Entradas ---")
@@ -114,31 +137,38 @@ def main():
         opcion = int(input("Selecciona una opción: "))
         
         if opcion == 5:
+            print("\n--- Fin del Programa ---")
             break
         
-        for i, nombre in enumerate(nombres):
-            print(f"{i + 1}. {nombre} - {fechas[i]}")
+        for i, (nombre, datos) in enumerate(espectaculos.items()):
+            print(f"{i + 1}. {nombre} - {datos['fecha']}")
         
         espectaculo_index = int(input("Selecciona el número del espectáculo: ")) - 1
         
-        if 0 <= espectaculo_index < len(nombres):
-            nombre = nombres[espectaculo_index]
-            fecha = fechas[espectaculo_index]
-            asientos = asientos_list[espectaculo_index]
+        if 0 <= espectaculo_index < len(espectaculos):
+            nombre = list(espectaculos.keys())[espectaculo_index]
+            fecha = espectaculos[nombre]["fecha"]
+            asientos = espectaculos[nombre]["asientos"]
             
             if opcion == 1:
                 mostrar_asientos(asientos, nombre, fecha)
+                comprar = input("¿Desea comprar un asiento en este espectáculo? (si/no): ")
+                if comprar.lower() == 'si':
+                    reservar_entrada(asientos)
             elif opcion == 2:
-                reservar_entrada(asientos, nombre, fecha)
+                reservar_entrada(asientos)
             elif opcion == 3:
                 consultar_disponibilidad(asientos)
             elif opcion == 4:
-                fila = int(input("Introduce el número de fila: "))
-                columna = int(input("Introduce el número de asiento: "))
-                cancelar_reserva(asientos, fila, columna)
+                cancelar_reserva(asientos)
         else:
             print("Espectáculo no encontrado.")
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
 
